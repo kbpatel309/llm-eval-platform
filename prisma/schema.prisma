@@ -1,0 +1,105 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model TestCase {
+  id              String    @id @default(cuid())
+  userMessage     String    @map("user_message")
+  expectedOutput  String    @map("expected_output")
+  graderType      String    @map("grader_type")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  experimentTestCases ExperimentTestCase[]
+  testCaseResults     TestCaseResult[]
+
+  @@map("test_cases")    
+}
+
+model LLMModel {
+  id                String    @id @default(cuid())
+  name              String
+  provider          String
+  modelVersion      String    @map("model_version")
+  apiConfiguration  Json?     @map("api_configuration")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  experiments       Experiment[]
+
+  @@map("llm_models")  
+}
+
+model Experiment {
+  id                String    @id @default(cuid())
+  name              String
+  systemPrompt      String    @map("system_prompt")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  llmModel            LLMModel    @relation(fields: [llmModelId], references: [id])
+  llmModelId          String      @map("llm_model_id")
+  experimentTestCases ExperimentTestCase[]
+  experimentRuns      ExperimentRun[]
+
+  @@unique([systemPrompt, llmModelId])
+  @@map("experiments")          
+}
+
+model ExperimentTestCase {
+  id              String      @id @default(cuid())
+  experimentId    String      @map("experiment_id")
+  testCaseId      String      @map("test_case_id")
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  experiment_id   Experiment  @relation(fields: [experimentId], references: [id])
+  testCase        TestCase    @relation(fields: [testCaseId], references: [id])
+
+  @@unique([experimentId, testCaseId])
+  @@map("experiment_test_cases")
+
+}
+
+model ExperimentRun {
+  id              String      @id @default(cuid())
+  experimentId    String      @map("experiment_id")
+  aggregateScore  Float?      @map("aggregate_score")
+  startedAt       DateTime    @default(now()) @map("started_at")
+  completedAt     DateTime?   @map("completed_at")
+
+  // Relations
+  experiment      Experiment  @relation(fields: [experimentId], references: [id])
+  testCaseResults TestCaseResult[]
+
+  @@map("experiment_runs")  
+}
+
+model TestCaseResult {
+  id              String        @id @default(cuid())
+  experimentRunId String        @map("experiment_run_id")
+  testCaseId      String        @map("test_case_id")
+  llmResponse     String        @map("llm_response")
+  score           Float
+  executionTimeMs Int           @map("execution_time_ms")
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  // Relations
+  experimentRun   ExperimentRun @relation(fields: [experimentRunId], references: [id])
+  testCase        TestCase      @relation(fields: [testCaseId], references: [id])
+
+  @@map("test_case_results")
+}
