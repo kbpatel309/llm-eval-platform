@@ -1,7 +1,7 @@
 import { LLMProvider, LLMResponse } from "./types";
 import { OpenAIProvider } from "./providers/openai";
 import { AnthropicProvider } from "./providers/anthropic";
-import { prisma } from "lib/prisma";
+import { prisma } from "@/lib/prisma";
 
 export class LLMService {
     private providers: Map<string, LLMProvider>;

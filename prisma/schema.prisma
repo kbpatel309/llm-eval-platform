@@ -103,3 +103,27 @@ model TestCaseResult {
 
   @@map("test_case_results")
 }
+
+model EvaluationResult {
+  id               String   @id @default(cuid())
+  testCaseResultId String   @map("test_case_result_id")
+  rawScore         Float    @map("raw_score")
+  weightedScore    Float    @map("weighted_score")
+  reasoning        String   @db.Text
+  accuracyScore    Float    @map("accuracy_score")
+  completenessScore Float   @map("completeness_score")
+  relevanceScore   Float    @map("relevance_score")
+  suggestion       String?  @db.Text
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // Relations
+  testCaseResult   TestCaseResult @relation(fields: [testCaseResultId], references: [id])
+
+  @@map("evaluation_results")
+}
+
+// Add this to the TestCaseResult model
+model TestCaseResult {
+  // ... existing fields ...
+  evaluationResult EvaluationResult?
+}
